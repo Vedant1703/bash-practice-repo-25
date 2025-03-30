@@ -2,3 +2,21 @@
 
 # Extract the wifi username (SSID)
 # Refer: "iw dev wlan0 link" command output for this
+
+# Get the wireless interface name (commonly wlan0 or similar)
+INTERFACE=$(iw dev | awk '$1=="Interface"{print $2}' | head -n1)
+
+if [ -z "$INTERFACE" ]; then
+    echo "No wireless interface found"
+    exit 1
+fi
+
+# Get the SSID using iw command
+SSID=$(iw dev "$INTERFACE" link | awk '/SSID:/ {print $2}' | tr -d '\n')
+
+if [ -z "$SSID" ]; then
+    echo "Not connected to any WiFi network"
+    exit 1
+else
+    echo "Connected to: $SSID"
+fi
