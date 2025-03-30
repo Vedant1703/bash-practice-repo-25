@@ -1,4 +1,66 @@
 #!/usr/bin/env bash
 
-# Remove all the binary files (usually made after gcc) present inside current directory
-# Refer "man find" for more information, you can also use modern tool like fd instead of find
+# Remove binary files (executables, object files) from current directory
+# Usage: ./rm-bins [--dry-run] [--verbose] [--use-fd]
+# Options:
+#   --dry-run  Show what would be deleted
+#   --verbose  Show detailed output
+#   --use-fd   Use 'fd' instead of 'find' (faster)
+
+set -euo pipefail
+
+DRY_RUN=false
+VERBOSE=false
+USE_FD=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --use-fd)
+            USE_FD=true
+            shift
+            ;;
+        *)
+            echo "Error: Unknown option $1"
+            echo "Usage: $0 [--dry-run] [--verbose] [--use-fd]"
+            exit 1
+            ;;
+    esac
+done
+
+# Detect binary files using either fd or find
+if command -v fd &>/dev/null && [[ "$USE_FD" == true ]]; then
+    [[ "$VERBOSE" == true ]] && echo "Using fd for binary detection"
+    binaries=$(fd --type executable --type x --hidden --no-ignore --exclude '.git/*')
+else
+    [[ "$VERBOSE" == true ]] && echo "Using find for binary detection"
+    binaries=$(find . -maxdepth 1 -type f -executable -o -name "*.o" -o -name "*.a" -o -name "*.so" -o -name "*.out" -o -name "*.exe")
+fi
+
+if [[ -z "$binaries" ]]; then
+    echo "No binary files found in current directory"
+    exit 0
+fi
+
+# Process binaries
+count=0
+while IFS= read -r -d $'\n' bin_file; do
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "[DRY RUN] Would remove: $bin_file"
+    else
+        [[ "$VERBOSE" == true ]] && echo "Removing: $bin_file"
+        rm -f "$bin_file"
+    fi
+    ((count++))
+done <<< "$binaries"
+
+echo "Processed $count binary file(s)"
+[[ "$DRY_RUN" == true ]] && echo "Dry run completed - no files were actually removed"
