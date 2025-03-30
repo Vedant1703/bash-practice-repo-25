@@ -1,4 +1,67 @@
 #!/usr/bin/env bash
 
-# Removes all files written in .gitignore of any git repository (multiple) present inside current directory
-# To find list of all git repos inside current directory you can use: "find . -name .git -type d -prune"
+# Safely remove all files listed in .gitignore files across all Git repositories
+# Usage: ./rm-gitignore [--dry-run] [--verbose]
+# Options:
+#   --dry-run  Show what would be deleted without actually removing
+#   --verbose  Show detailed output
+
+set -euo pipefail
+
+DRY_RUN=false
+VERBOSE=false
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Find all Git repositories
+find . -name .git -type d -prune | while read -r git_dir; do
+    repo_root=$(dirname "$git_dir")
+    gitignore_path="$repo_root/.gitignore"
+    
+    if [[ -f "$gitignore_path" ]]; then
+        if [[ "$VERBOSE" == true ]]; then
+            echo "Processing repository: $repo_root"
+        fi
+
+        cd "$repo_root" || exit
+        
+        # Get list of ignored files (respecting .gitignore rules)
+        ignored_files=$(git ls-files --ignored --exclude-standard --others | tr '\n' '\0')
+        
+        if [[ -z "$ignored_files" ]]; then
+            [[ "$VERBOSE" == true ]] && echo "No ignored files found in $repo_root"
+            cd - >/dev/null || exit
+            continue
+        fi
+
+        # Process each ignored file
+        while IFS= read -r -d '' file; do
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "[DRY RUN] Would remove: $repo_root/$file"
+            else
+                [[ "$VERBOSE" == true ]] && echo "Removing: $repo_root/$file"
+                rm -rf "$file"
+            fi
+        done <<< "$ignored_files"
+        
+        cd - >/dev/null || exit
+    fi
+done
+
+echo "Done cleaning gitignore files."
