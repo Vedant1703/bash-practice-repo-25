@@ -1,4 +1,22 @@
 #!/usr/bin/env bash
 
-# TODO: Display weather of IIIT, Lucknow
-# For more information see: https://wttr.in/:help
+# Display weather for IIIT Lucknow (or custom location) using wttr.in
+# Usage: ./weather.sh [location]
+# Example: ./weather.sh "IIIT Lucknow"
+# See: https://wttr.in/:help
+
+DEFAULT_LOCATION="IIIT Lucknow"
+
+# Set location (use first argument if provided)
+LOCATION="${1:-$DEFAULT_LOCATION}"
+
+# Fetch and display weather with sensible defaults
+curl -s "https://wttr.in/${LOCATION}?0QT" \
+  | sed 's/Follow.*//g' \
+  | head -7
+
+# Error handling
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "Error: Could not fetch weather data. Check your internet connection."
+  exit 1
+fi
