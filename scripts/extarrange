@@ -1,33 +1,64 @@
 #!/usr/bin/env bash
 
-# Arranges the files by grouping them into folder of their extension name
-# TODO: Run this script in your downloads folder
+# Arranges files by grouping them into folders by their extension
+# Handles special cases for similar file types using regex
+# Usage: Run in target directory (e.g., ~/Downloads)
 
 require() {
-    command -v "$1" 1>/dev/null || { >&2 echo "Error: $1 is not installed";exit 1; }
+    command -v "$1" 1>/dev/null || { >&2 echo "Error: $1 is not installed"; exit 1; }
 }
 
 require fd
 require egrep
 
 declare -A special_cases=(
-    ['^*.(tar.*|tbz)$']='tar'
-    # TODO: Add your own pattern here for similar file types appropriately
-    # Refer https://regex101.com/ & https://github.com/ziishaned/learn-regex/ for explaination and writing patterns
-    # These (regex) are same as ones used in sed command
+    # Archive formats
+    ['^*.(tar\.(gz|bz2|xz|zst)|tgz|tbz2|txz)$']='tar'
+    ['^*.(zip|cbz|apk|jar|war|ear)$']='zip'
+    ['^*.(rar|7z|iso|deb|rpm|pkg)$']='archives'
+    
+    # Media formats
+    ['^*.(mp[34]|m4a|flac|wav|aac|ogg|wma)$']='audio'
+    ['^*.(mp4|mkv|avi|mov|wmv|flv|webm|m4v)$']='video'
+    ['^*.(jp(e)?g|png|gif|webp|bmp|svg|heic)$']='images'
+    
+    # Document formats
+    ['^*.(pdf|epub|mobi|azw3)$']='ebooks'
+    ['^*.(docx?|xlsx?|pptx?|od[ts])$']='office'
+    ['^*.(md|rst|tex)$']='markup'
+    
+    # Code formats
+    ['^*.(jsx?|tsx?|coffee)$']='javascript'
+    ['^*.(py[cdw]|py)$']='python'
+    ['^*.(rb|erb|gemspec)$']='ruby'
+    
+    # Configuration formats
+    ['^*.(ya?ml|toml|json[5c]?)$']='configs'
+    ['^*.(conf|cfg|ini|reg)$']='configs'
+    
+    # Disk/images
+    ['^*.(img|iso|dmg|vmdk)$']='disk-images'
+    
+    # Temporary files
+    ['^*.(tmp|temp|bak|swp)$']='temp'
 )
 
+echo "Organizing files by extension..."
+echo "Special cases handled:"
+printf "  - %s → %s\n" "${!special_cases[@]}" "${special_cases[@]}" | sort
+
 fd -tf -d1 \
-| while read file; do
+| while read -r file; do
     folder="$PWD/${file##*.}"
     for regex in "${!special_cases[@]}"; do
-        (echo "$file" | egrep -q "$regex") && {
+        if echo "$file" | egrep -q "$regex"; then
             folder="$PWD/${special_cases[$regex]}"
             break
-        }
+        fi
     done
 
     mkdir -p "$folder"
-    mv "$file" "$folder"
+    mv -v "$file" "$folder"
 done
 
+echo "Organization complete!"
