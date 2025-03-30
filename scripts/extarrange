@@ -12,34 +12,34 @@ require fd
 require egrep
 
 declare -A special_cases=(
-    # Archive formats
+   
     ['^*.(tar\.(gz|bz2|xz|zst)|tgz|tbz2|txz)$']='tar'
     ['^*.(zip|cbz|apk|jar|war|ear)$']='zip'
     ['^*.(rar|7z|iso|deb|rpm|pkg)$']='archives'
     
-    # Media formats
+
     ['^*.(mp[34]|m4a|flac|wav|aac|ogg|wma)$']='audio'
     ['^*.(mp4|mkv|avi|mov|wmv|flv|webm|m4v)$']='video'
     ['^*.(jp(e)?g|png|gif|webp|bmp|svg|heic)$']='images'
     
-    # Document formats
+
     ['^*.(pdf|epub|mobi|azw3)$']='ebooks'
     ['^*.(docx?|xlsx?|pptx?|od[ts])$']='office'
     ['^*.(md|rst|tex)$']='markup'
     
-    # Code formats
+
     ['^*.(jsx?|tsx?|coffee)$']='javascript'
     ['^*.(py[cdw]|py)$']='python'
     ['^*.(rb|erb|gemspec)$']='ruby'
     
-    # Configuration formats
+
     ['^*.(ya?ml|toml|json[5c]?)$']='configs'
     ['^*.(conf|cfg|ini|reg)$']='configs'
     
-    # Disk/images
+
     ['^*.(img|iso|dmg|vmdk)$']='disk-images'
     
-    # Temporary files
+
     ['^*.(tmp|temp|bak|swp)$']='temp'
 )
 
